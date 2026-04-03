@@ -14,12 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: {
-    default: "R Carrivox | Recruitment Consultancy",
-    template: "%s | R Carrivox",
-  },
-  description:
-    "R Carrivox is a recruitment consultancy helping employers hire with confidence and candidates explore better career opportunities.",
+  title: "Rcarrivox",
+  description: "Talent Acquistion & consulting solutions",
 };
 
 export default function RootLayout({ children }) {

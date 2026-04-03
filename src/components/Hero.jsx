@@ -8,7 +8,7 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto grid gap-14 px-6 py-16 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div className="max-w-2xl">
           <span className="inline-flex rounded-full border border-blue-200 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-blue-900 shadow-sm">
-            Recruitment Consultancy
+            Talent Acquisition &amp; Consulting Solutions
           </span>
           <h1 className="mt-8 text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
             Precision hiring for businesses that want stronger teams.
@@ -61,12 +61,9 @@ export default function Hero() {
                     },
                   ].map((item) => (
                     <div
-                      key={item.step}
-                      className="grid gap-3 border-b border-slate-200 pb-5 last:border-b-0 last:pb-0 sm:grid-cols-[auto_1fr]"
+                      key={item.title}
+                      className="border-b border-slate-200 pb-5 last:border-b-0 last:pb-0"
                     >
-                      <span className="text-xs font-semibold tracking-[0.3em] text-slate-400">
-                        {item.step}
-                      </span>
                       <div>
                         <p className="text-lg font-semibold text-slate-950">
                           {item.title}

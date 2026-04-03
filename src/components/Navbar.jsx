@@ -30,10 +30,10 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between gap-8 py-4">
-          <div className="flex items-center gap-4 lg:gap-5">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4 lg:gap-5">
             <BrandLogo onClick={() => setMenuOpen(false)} />
             <div className="hidden h-10 w-px bg-slate-200 sm:block" />
-            <p className="hidden whitespace-nowrap text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-slate-500 sm:block lg:text-xs">
+            <p className="max-w-[7.2rem] text-[0.5rem] leading-[1.2] font-semibold uppercase tracking-[0.22em] text-slate-500 sm:max-w-none sm:whitespace-nowrap sm:text-[0.68rem] sm:leading-none sm:tracking-[0.32em] lg:text-xs">
               Carrying Talent Forward
             </p>
           </div>
