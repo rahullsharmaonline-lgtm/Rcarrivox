@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(30, 58, 138, 0.08), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 38%, #f8fafc 100%);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+::selection {
+  background: rgba(30, 58, 138, 0.16);
+  color: #0f172a;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.home-employer-marquee {
+  overflow: hidden;
+}
+
+.home-employer-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 1.25rem;
+  will-change: transform;
+  animation: home-employer-marquee 28s linear infinite;
+}
+
+.home-employer-marquee-group {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.home-employer-marquee:hover .home-employer-marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes home-employer-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50% - 0.625rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-employer-marquee-track {
+    animation: none;
+  }
+}
