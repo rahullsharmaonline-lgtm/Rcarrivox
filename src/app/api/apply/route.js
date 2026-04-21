@@ -26,6 +26,7 @@ function jsonError(message, status = 400) {
 
 export async function POST(request) {
   try {
+    console.log("POST /api/apply received");
     const formData = await request.formData();
 
     const name = getTextField(formData, "name");
@@ -117,6 +118,7 @@ export async function POST(request) {
       message: "Application submitted successfully.",
     });
   } catch (_error) {
+    console.error("POST /api/apply failed");
     return jsonError("Something went wrong while submitting the application.", 500);
   }
 }

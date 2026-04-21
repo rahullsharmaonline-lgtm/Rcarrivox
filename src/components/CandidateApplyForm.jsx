@@ -163,6 +163,8 @@ function InputField({
 }
 
 export default function CandidateApplyForm() {
+  console.log("CandidateApplyForm loaded");
+
   const [formData, setFormData] = useState(initialFormData);
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -423,6 +425,7 @@ export default function CandidateApplyForm() {
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    console.log("Candidate form submit triggered");
     setSubmitAttempted(true);
     setTouched({
       fullName: true,
@@ -437,10 +440,18 @@ export default function CandidateApplyForm() {
     const nextPhoneError = validatePhoneNumber(phone);
     const nextErrors = getFormErrors(formData, nextPhoneError);
 
+    console.log("Candidate form validation state", {
+      formData,
+      phone,
+      nextPhoneError,
+      nextErrors,
+    });
+
     setPhoneError(nextPhoneError);
     setSubmitError("");
 
     if (Object.values(nextErrors).some(Boolean)) {
+      console.warn("Candidate form submit blocked by validation", nextErrors);
       return;
     }
 
@@ -462,7 +473,9 @@ export default function CandidateApplyForm() {
 
     try {
       setSubmitting(true);
+      console.log("Candidate form calling submitApplication");
       await submitApplication(submissionData);
+      console.log("Candidate form submission succeeded");
       setShowSuccess(true);
       setFormData(initialFormData);
       setPhone("");
@@ -477,6 +490,7 @@ export default function CandidateApplyForm() {
       setShowLocationSuggestions(false);
       setShouldSuggestLocation(false);
     } catch (error) {
+      console.error("Candidate form submission failed", error);
       setSubmitError(
         error instanceof Error
           ? error.message
