@@ -4,9 +4,13 @@ import path from "node:path";
 
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_PATTERN = /^\+91\d{10}$/;
 const MAX_RESUME_SIZE = 5 * 1024 * 1024;
+const FORMSPREE_ENDPOINT =
+  process.env.FORMSPREE_ENDPOINT?.trim() || "https://formspree.io/f/mbdpplzw";
 
 function getTextField(formData, name) {
   const value = formData.get(name);
@@ -24,9 +28,99 @@ function jsonError(message, status = 400) {
   );
 }
 
+async function persistApplicationLocally({
+  name,
+  email,
+  phone,
+  role,
+  fullName,
+  location,
+  designation,
+  preferredRole,
+  experience,
+  message,
+  resume,
+}) {
+  const storageRoot = path.join(process.cwd(), "storage");
+  const submissionsDir = path.join(storageRoot, "applications");
+  const resumesDir = path.join(storageRoot, "resumes");
+
+  await Promise.all([
+    mkdir(submissionsDir, { recursive: true }),
+    mkdir(resumesDir, { recursive: true }),
+  ]);
+
+  const submissionId = `${Date.now()}-${randomUUID()}`;
+  const resumeFileName = `${submissionId}-${resume.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const resumePath = path.join(resumesDir, resumeFileName);
+  const submissionPath = path.join(submissionsDir, `${submissionId}.json`);
+
+  await writeFile(resumePath, Buffer.from(await resume.arrayBuffer()));
+
+  await writeFile(
+    submissionPath,
+    JSON.stringify(
+      {
+        id: submissionId,
+        submittedAt: new Date().toISOString(),
+        name,
+        email,
+        phone,
+        role,
+        fullName,
+        location,
+        designation,
+        preferredRole,
+        experience,
+        message,
+        resume: {
+          originalName: resume.name,
+          savedAs: resumeFileName,
+          size: resume.size,
+          type: resume.type,
+        },
+      },
+      null,
+      2
+    )
+  );
+}
+
+async function forwardApplicationToFormspree(fields, resume) {
+  const payload = new FormData();
+
+  payload.append("_subject", "New candidate application from RCarrivox");
+  payload.append("formType", "Candidate Application");
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (value) {
+      payload.append(key, value);
+    }
+  }
+
+  payload.append("resume", resume, resume.name);
+
+  const response = await fetch(FORMSPREE_ENDPOINT, {
+    method: "POST",
+    body: payload,
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      result?.errors?.[0]?.message ||
+        result?.message ||
+        "Unable to forward the application right now."
+    );
+  }
+}
+
 export async function POST(request) {
   try {
-    console.log("POST /api/apply received");
     const formData = await request.formData();
 
     const name = getTextField(formData, "name");
@@ -69,56 +163,41 @@ export async function POST(request) {
       return jsonError("Only PDF resume files are allowed.");
     }
 
-    const storageRoot = path.join(process.cwd(), "storage");
-    const submissionsDir = path.join(storageRoot, "applications");
-    const resumesDir = path.join(storageRoot, "resumes");
+    const applicationFields = {
+      name,
+      email,
+      phone,
+      role,
+      fullName,
+      location,
+      designation,
+      preferredRole,
+      experience,
+      message,
+    };
 
-    await Promise.all([
-      mkdir(submissionsDir, { recursive: true }),
-      mkdir(resumesDir, { recursive: true }),
-    ]);
+    try {
+      await persistApplicationLocally({
+        ...applicationFields,
+        resume,
+      });
+    } catch (localPersistenceError) {
+      console.warn("Local application storage failed", localPersistenceError);
+    }
 
-    const submissionId = `${Date.now()}-${randomUUID()}`;
-    const resumeFileName = `${submissionId}-${resume.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const resumePath = path.join(resumesDir, resumeFileName);
-    const submissionPath = path.join(submissionsDir, `${submissionId}.json`);
-
-    await writeFile(resumePath, Buffer.from(await resume.arrayBuffer()));
-
-    await writeFile(
-      submissionPath,
-      JSON.stringify(
-        {
-          id: submissionId,
-          submittedAt: new Date().toISOString(),
-          name,
-          email,
-          phone,
-          role,
-          fullName,
-          location,
-          designation,
-          preferredRole,
-          experience,
-          message,
-          resume: {
-            originalName: resume.name,
-            savedAs: resumeFileName,
-            size: resume.size,
-            type: resume.type,
-          },
-        },
-        null,
-        2
-      )
-    );
+    await forwardApplicationToFormspree(applicationFields, resume);
 
     return NextResponse.json({
       success: true,
       message: "Application submitted successfully.",
     });
-  } catch (_error) {
-    console.error("POST /api/apply failed");
-    return jsonError("Something went wrong while submitting the application.", 500);
+  } catch (error) {
+    console.error("POST /api/apply failed", error);
+    return jsonError(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong while submitting the application.",
+      500
+    );
   }
 }
