@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FormSuccessMessage from "./FormSuccessMessage";
-import { submitToFormspree } from "../lib/formspree";
+import { submitApplication } from "../lib/backend";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_PATTERN = /^[6-9]\d{9}$/;
+const PHONE_PATTERN = /^\d{10}$/;
+const LOCATION_ENDPOINT = "https://nominatim.openstreetmap.org";
+const LOCATION_MIN_QUERY_LENGTH = 2;
 
 const initialFormData = {
   fullName: "",
@@ -51,6 +53,10 @@ function validateField(name, value) {
       return EMAIL_PATTERN.test(value)
         ? ""
         : "Please enter a valid email address";
+    case "location":
+      return value.trim() ? "" : "Please enter your current location";
+    case "designation":
+      return value.trim() ? "" : "Please enter your current designation";
     case "preferredRole":
       return value.trim() ? "" : "Please enter your preferred role";
     case "resume":
@@ -77,14 +83,46 @@ function validatePhoneNumber(value) {
   return PHONE_PATTERN.test(value) ? "" : "Enter valid 10-digit phone number";
 }
 
+function formatPhoneNumber(value) {
+  return `+91${value}`;
+}
+
+function buildRoleSummary(formData) {
+  return [
+    formData.preferredRole ? `Preferred Role: ${formData.preferredRole}` : null,
+    formData.designation ? `Current Designation: ${formData.designation}` : null,
+    formData.location ? `Location: ${formData.location}` : null,
+    formData.experience ? `Experience: ${formData.experience}` : null,
+    formData.message ? `Notes: ${formData.message}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
 function getFormErrors(formData, phoneError) {
   return {
     fullName: validateField("fullName", formData.fullName),
     email: validateField("email", formData.email),
     phone: phoneError,
+    location: validateField("location", formData.location),
+    designation: validateField("designation", formData.designation),
     preferredRole: validateField("preferredRole", formData.preferredRole),
     resume: validateField("resume", formData.resume),
   };
+}
+
+function getLocationLabel(address, fallback = "") {
+  const city =
+    address?.city ||
+    address?.town ||
+    address?.village ||
+    address?.hamlet ||
+    address?.county ||
+    "";
+  const stateName = address?.state || "";
+  const country = address?.country || "";
+
+  return [city, stateName, country].filter(Boolean).join(", ") || fallback;
 }
 
 function InputField({
@@ -100,6 +138,7 @@ function InputField({
   type = "text",
   value,
   placeholder,
+  maxLength,
 }) {
   return (
     <label className="block">
@@ -115,6 +154,7 @@ function InputField({
         type={type}
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         className={getFieldClasses(Boolean(error))}
       />
       {error ? <p className="mt-1 text-xs text-red-500">{error}</p> : null}
@@ -135,6 +175,10 @@ export default function CandidateApplyForm() {
     error: "",
     loading: false,
   });
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [shouldSuggestLocation, setShouldSuggestLocation] = useState(false);
+  const locationBlurTimeoutRef = useRef(null);
 
   const formErrors = getFormErrors(formData, phoneError);
 
@@ -168,14 +212,14 @@ export default function CandidateApplyForm() {
   };
 
   const handlePhoneChange = (event) => {
-    const nextPhone = event.target.value.replace(/\s+/g, "");
+    const nextPhone = event.target.value.replace(/\D/g, "").slice(0, 10);
 
     setPhone(nextPhone);
     setPhoneError(validatePhoneNumber(nextPhone));
   };
 
   const handlePhoneBlur = (event) => {
-    const nextPhone = event.target.value.replace(/\s+/g, "");
+    const nextPhone = event.target.value.replace(/\D/g, "").slice(0, 10);
 
     setPhone(nextPhone);
     setPhoneError(validatePhoneNumber(nextPhone));
@@ -201,6 +245,127 @@ export default function CandidateApplyForm() {
     }));
   };
 
+  const handleLocationChange = (event) => {
+    const nextLocation = event.target.value;
+
+    setFormData((current) => ({
+      ...current,
+      location: nextLocation,
+    }));
+    setLocationState((current) => ({
+      ...current,
+      error: "",
+    }));
+    setShouldSuggestLocation(true);
+    setShowLocationSuggestions(true);
+  };
+
+  const handleLocationBlur = () => {
+    locationBlurTimeoutRef.current = setTimeout(() => {
+      setShowLocationSuggestions(false);
+    }, 120);
+
+    setTouched((current) => ({
+      ...current,
+      location: true,
+    }));
+  };
+
+  const handleLocationFocus = () => {
+    if (formData.location.trim().length >= LOCATION_MIN_QUERY_LENGTH) {
+      setShowLocationSuggestions(true);
+      setShouldSuggestLocation(true);
+    }
+  };
+
+  const applyLocationValue = (nextLocation) => {
+    if (locationBlurTimeoutRef.current) {
+      clearTimeout(locationBlurTimeoutRef.current);
+    }
+
+    setFormData((current) => ({
+      ...current,
+      location: nextLocation,
+    }));
+    setLocationState({
+      error: "",
+      loading: false,
+    });
+    setLocationSuggestions([]);
+    setShowLocationSuggestions(false);
+    setShouldSuggestLocation(false);
+  };
+
+  useEffect(() => {
+    if (!shouldSuggestLocation) {
+      return;
+    }
+
+    const query = formData.location.trim();
+
+    if (query.length < LOCATION_MIN_QUERY_LENGTH) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `${LOCATION_ENDPOINT}/search?format=jsonv2&addressdetails=1&limit=5&q=${encodeURIComponent(
+            query
+          )}`,
+          {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to load location suggestions.");
+        }
+
+        const data = await response.json();
+        const suggestions = data
+          .map((item) => {
+            const label = getLocationLabel(item.address, item.display_name);
+
+            if (!label) {
+              return null;
+            }
+
+            return {
+              id: `${item.place_id}-${label}`,
+              label,
+            };
+          })
+          .filter(Boolean);
+
+        setLocationSuggestions(suggestions);
+        setShowLocationSuggestions(true);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setLocationSuggestions([]);
+        }
+      }
+    }, 260);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [formData.location, shouldSuggestLocation]);
+
+  useEffect(() => {
+    return () => {
+      if (locationBlurTimeoutRef.current) {
+        clearTimeout(locationBlurTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const getLocation = async () => {
     if (!navigator.geolocation) {
       setLocationState({
@@ -217,7 +382,12 @@ export default function CandidateApplyForm() {
         try {
           const { latitude, longitude } = position.coords;
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+            `${LOCATION_ENDPOINT}/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2&addressdetails=1`,
+            {
+              headers: {
+                Accept: "application/json",
+              },
+            }
           );
 
           if (!response.ok) {
@@ -225,24 +395,13 @@ export default function CandidateApplyForm() {
           }
 
           const data = await response.json();
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.village ||
-            data.address?.county ||
-            "";
-          const stateName = data.address?.state || "";
-          const resolvedLocation = [city, stateName].filter(Boolean).join(", ");
+          const resolvedLocation = getLocationLabel(data.address, data.display_name);
 
           if (!resolvedLocation) {
-            throw new Error("We could not detect your city and state.");
+            throw new Error("We could not detect your city, state, and country.");
           }
 
-          setFormData((current) => ({
-            ...current,
-            location: resolvedLocation,
-          }));
-          setLocationState({ error: "", loading: false });
+          applyLocationValue(resolvedLocation);
         } catch (error) {
           setLocationState({
             error:
@@ -269,6 +428,8 @@ export default function CandidateApplyForm() {
       fullName: true,
       email: true,
       phone: true,
+      location: true,
+      designation: true,
       preferredRole: true,
       resume: true,
     });
@@ -284,11 +445,11 @@ export default function CandidateApplyForm() {
     }
 
     const submissionData = new FormData();
-    submissionData.append("_subject", "New candidate application from RCarrivox");
-    submissionData.append("formType", "Candidate Application");
-    submissionData.append("fullName", formData.fullName);
+    submissionData.append("name", formData.fullName);
     submissionData.append("email", formData.email);
-    submissionData.append("phone", phone);
+    submissionData.append("phone", formatPhoneNumber(phone));
+    submissionData.append("role", buildRoleSummary(formData));
+    submissionData.append("fullName", formData.fullName);
     submissionData.append("location", formData.location);
     submissionData.append("designation", formData.designation);
     submissionData.append("preferredRole", formData.preferredRole);
@@ -301,7 +462,7 @@ export default function CandidateApplyForm() {
 
     try {
       setSubmitting(true);
-      await submitToFormspree(submissionData);
+      await submitApplication(submissionData);
       setShowSuccess(true);
       setFormData(initialFormData);
       setPhone("");
@@ -312,6 +473,9 @@ export default function CandidateApplyForm() {
         error: "",
         loading: false,
       });
+      setLocationSuggestions([]);
+      setShowLocationSuggestions(false);
+      setShouldSuggestLocation(false);
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -327,8 +491,8 @@ export default function CandidateApplyForm() {
     return (
       <FormSuccessMessage
         eyebrow="Application Submitted"
-        title="Thanks for sharing your profile."
-        description="Your application has been sent successfully. Our team can now review your details, resume, and role preferences directly from Formspree."
+        title="Submitted successfully."
+        description="Your application has been sent successfully. Our team can now review your profile, role details, and resume."
       />
     );
   }
@@ -378,41 +542,70 @@ export default function CandidateApplyForm() {
           type="tel"
           value={phone}
           placeholder="9876543210"
+          maxLength={10}
         />
         <label className="block">
           <span className="mb-2 block text-sm font-medium text-slate-700">
             Current Location
           </span>
           <div className="space-y-2">
-            <input
-              id="location"
-              name="location"
-              type="text"
-              value={formData.location}
-              readOnly
-              placeholder="City, State"
-              className={getFieldClasses(false, true)}
-            />
-            <button
-              type="button"
-              onClick={getLocation}
-              disabled={locationState.loading}
-              className="text-sm font-medium text-blue-700 transition hover:text-blue-900 disabled:cursor-not-allowed disabled:text-slate-400"
-            >
-              {locationState.loading ? "Fetching location..." : "Use Current Location"}
-            </button>
+            <div className="relative">
+              <input
+                id="location"
+                name="location"
+                type="text"
+                value={formData.location}
+                autoComplete="off"
+                placeholder="City, State, Country"
+                onBlur={handleLocationBlur}
+                onChange={handleLocationChange}
+                onFocus={handleLocationFocus}
+                className={getFieldClasses(Boolean(showError("location")))}
+              />
+              {showLocationSuggestions && locationSuggestions.length ? (
+                <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.45)]">
+                  {locationSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onMouseDown={() => applyLocationValue(suggestion.label)}
+                      className="block w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                    >
+                      {suggestion.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            {showError("location") ? (
+              <p className="text-xs text-red-500">{showError("location")}</p>
+            ) : null}
             {locationState.error ? (
               <p className="text-sm text-amber-600">{locationState.error}</p>
             ) : null}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={getLocation}
+                disabled={locationState.loading}
+                className="text-sm font-medium text-blue-700 transition hover:text-blue-900 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {locationState.loading ? "Fetching location..." : "Use Current Location"}
+              </button>
+              <span className="text-xs text-slate-500">
+                Search by city to see city, state, and country suggestions.
+              </span>
+            </div>
           </div>
         </label>
         <InputField
           id="designation"
           name="designation"
           label="Current Designation"
-          error=""
+          error={showError("designation")}
           onBlur={handleFieldBlur}
           onChange={handleFieldChange}
+          required
           value={formData.designation}
           placeholder="Enter current role"
         />
@@ -480,6 +673,7 @@ export default function CandidateApplyForm() {
       <label className="mt-6 block">
         <span className="mb-2 block text-sm font-medium text-slate-700">
           Additional Notes
+          <span className="ml-2 text-xs font-normal text-slate-500">(Optional)</span>
         </span>
         <textarea
           id="message"

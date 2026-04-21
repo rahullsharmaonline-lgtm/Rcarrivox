@@ -5,7 +5,7 @@ import FormSuccessMessage from "./FormSuccessMessage";
 import { submitToFormspree } from "../lib/formspree";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_PATTERN = /^[6-9]\d{9}$/;
+const PHONE_PATTERN = /^\d{10}$/;
 
 const initialFormData = {
   fullName: "",
@@ -40,6 +40,8 @@ function validateField(name, value) {
   switch (name) {
     case "fullName":
       return value.trim() ? "" : "Please enter your full name";
+    case "company":
+      return value.trim() ? "" : "Please enter your company or organization";
     case "email":
       if (!value.trim()) {
         return "Please enter a valid email address";
@@ -48,10 +50,10 @@ function validateField(name, value) {
         ? ""
         : "Please enter a valid email address";
     case "phone":
-      if (value.trim() && !PHONE_PATTERN.test(value)) {
+      if (!value.trim()) {
         return "Enter valid 10-digit phone number";
       }
-      return "";
+      return PHONE_PATTERN.test(value) ? "" : "Enter valid 10-digit phone number";
     case "requirementType":
       return value.trim() ? "" : "Please select a requirement type";
     case "message":
@@ -64,6 +66,7 @@ function validateField(name, value) {
 function getFormErrors(formData) {
   return {
     fullName: validateField("fullName", formData.fullName),
+    company: validateField("company", formData.company),
     email: validateField("email", formData.email),
     phone: validateField("phone", formData.phone),
     requirementType: validateField("requirementType", formData.requirementType),
@@ -84,6 +87,7 @@ function InputField({
   type = "text",
   value,
   placeholder,
+  maxLength,
 }) {
   return (
     <label className="block">
@@ -99,6 +103,7 @@ function InputField({
         type={type}
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         className={getFieldClasses(Boolean(error))}
       />
       {error ? <p className="mt-1 text-xs text-red-500">{error}</p> : null}
@@ -121,10 +126,12 @@ export default function ContactQueryForm() {
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
+    const nextValue =
+      name === "phone" ? value.replace(/\D/g, "").slice(0, 10) : value;
 
     setFormData((current) => ({
       ...current,
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
@@ -150,6 +157,7 @@ export default function ContactQueryForm() {
     setSubmitAttempted(true);
     setTouched({
       fullName: true,
+      company: true,
       email: true,
       phone: true,
       requirementType: true,
@@ -193,8 +201,8 @@ export default function ContactQueryForm() {
     return (
       <FormSuccessMessage
         eyebrow="Query Submitted"
-        title="Thanks for reaching out."
-        description="Your message has been sent successfully. Our team can now review your hiring requirement or enquiry directly from Formspree."
+        title="Submitted successfully."
+        description="Your message has been sent successfully. Our team can now review your hiring requirement or enquiry."
       />
     );
   }
@@ -223,9 +231,10 @@ export default function ContactQueryForm() {
           name="company"
           label="Company / Organization"
           autoComplete="organization"
-          error=""
+          error={showError("company")}
           onBlur={handleFieldBlur}
           onChange={handleFieldChange}
+          required
           type="text"
           value={formData.company}
           placeholder="Enter company name"
@@ -252,9 +261,11 @@ export default function ContactQueryForm() {
           inputMode="tel"
           onBlur={handleFieldBlur}
           onChange={handleFieldChange}
+          required
           type="tel"
           value={formData.phone}
           placeholder="9876543210"
+          maxLength={10}
         />
       </div>
 

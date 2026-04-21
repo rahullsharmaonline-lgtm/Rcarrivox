@@ -77,6 +77,18 @@ textarea {
   animation-play-state: paused;
 }
 
+.success-pop-in {
+  animation: success-pop-in 440ms ease-out;
+}
+
+.success-ring {
+  animation: success-ring 1.4s ease-out infinite;
+}
+
+.success-check {
+  animation: success-check 520ms cubic-bezier(0.2, 0.9, 0.2, 1.15);
+}
+
 @keyframes home-employer-marquee {
   from {
     transform: translateX(0);
@@ -87,8 +99,57 @@ textarea {
   }
 }
 
+@keyframes success-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes success-ring {
+  0% {
+    opacity: 0.85;
+    transform: scale(0.82);
+  }
+
+  70% {
+    opacity: 0.15;
+    transform: scale(1.18);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.24);
+  }
+}
+
+@keyframes success-check {
+  0% {
+    transform: scale(0.45) rotate(-14deg);
+  }
+
+  65% {
+    transform: scale(1.08) rotate(3deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-employer-marquee-track {
+    animation: none;
+  }
+
+  .success-pop-in,
+  .success-ring,
+  .success-check {
     animation: none;
   }
 }
