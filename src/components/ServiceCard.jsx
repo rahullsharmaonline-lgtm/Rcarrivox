@@ -7,7 +7,7 @@ export default function ServiceCard({
   imageAlt,
 }) {
   return (
-    <article className="group relative isolate overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/80 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_28px_80px_-30px_rgba(30,58,138,0.28)]">
+    <article className="group relative isolate h-full overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/80 shadow-[0_18px_50px_-24px_rgba(15,23,42,0.22)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_28px_80px_-30px_rgba(30,58,138,0.28)]">
       <div className="absolute inset-0 rounded-[1.75rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.64),rgba(255,255,255,0.22))]" />
       <div className="absolute inset-0 rounded-[1.75rem] bg-[radial-gradient(circle_at_top_right,rgba(30,64,175,0.16),transparent_44%),linear-gradient(145deg,rgba(219,234,254,0),rgba(191,219,254,0.22))] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -23,24 +23,17 @@ export default function ServiceCard({
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/64 via-slate-900/28 to-slate-900/8 transition-all duration-300 group-hover:from-slate-950/72 group-hover:via-slate-900/36 group-hover:to-slate-900/12" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-70" />
 
-          <div className="absolute inset-x-6 bottom-6">
-            <h3 className="text-2xl font-semibold tracking-tight text-white">
+          <div className="absolute inset-x-5 bottom-5">
+            <h3 className="m-0 text-lg font-semibold tracking-tight text-white">
               {title}
             </h3>
           </div>
         </div>
 
-        <div className="px-8 pb-8 pt-7">
-          <p className="mt-4 max-w-md text-sm leading-7 text-slate-600">
+        <div className="flex flex-1 flex-col justify-between p-5">
+          <p className="m-0 min-h-[8.5rem] text-pretty text-sm font-normal leading-6 text-gray-500">
             {description}
           </p>
-
-          <div className="mt-8 flex items-center gap-3">
-            <span className="h-px flex-1 bg-gradient-to-r from-blue-200 via-slate-200 to-transparent transition-colors duration-300 group-hover:from-blue-400 group-hover:via-blue-200" />
-            <span className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500 transition-colors duration-300 group-hover:text-blue-800">
-              R Carrivox
-            </span>
-          </div>
         </div>
       </div>
     </article>

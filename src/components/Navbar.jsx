@@ -29,11 +29,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between gap-8 py-4">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4 lg:gap-5">
-            <BrandLogo onClick={() => setMenuOpen(false)} />
+        <div className="flex items-center justify-between gap-4 py-4 sm:gap-8">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-4 lg:gap-5">
+            <div className="shrink-0">
+              <BrandLogo onClick={() => setMenuOpen(false)} />
+            </div>
             <div className="hidden h-10 w-px bg-slate-200 sm:block" />
-            <p className="max-w-[7.2rem] text-[0.5rem] leading-[1.2] font-semibold uppercase tracking-[0.22em] text-slate-500 sm:max-w-none sm:whitespace-nowrap sm:text-[0.68rem] sm:leading-none sm:tracking-[0.32em] lg:text-xs">
+            <p className="min-w-[6.25rem] shrink-0 text-[0.5rem] leading-[1.2] font-semibold uppercase tracking-[0.22em] text-slate-500 sm:min-w-0 sm:max-w-none sm:whitespace-nowrap sm:text-[0.68rem] sm:leading-none sm:tracking-[0.32em] lg:text-xs">
               Carrying Talent Forward
             </p>
           </div>
@@ -51,7 +53,7 @@ export default function Navbar() {
           <button
             type="button"
             aria-label="Toggle navigation"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:border-blue-900 hover:text-blue-900 lg:hidden"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:border-blue-900 hover:text-blue-900 lg:hidden"
             onClick={() => setMenuOpen((current) => !current)}
           >
             <span className="space-y-1.5">

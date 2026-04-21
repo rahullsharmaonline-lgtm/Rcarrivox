@@ -15,7 +15,15 @@ export const serviceCards = [
     image: "/images/services/executive-search.webp",
     imageAlt: "Professionals collaborating in a modern office setting",
     description:
-      "Targeted search mandates for leadership, specialist, and business-critical hires.",
+      "We help organizations find the right leaders for critical roles by focusing on experience, industry knowledge, and long-term impact. Our approach ensures the candidate aligns well with both business goals and team culture.",
+  },
+  {
+    code: "CS",
+    title: "Contract Staffing",
+    image: "/images/services/talent-advisory-v2.webp",
+    imageAlt: "Corporate team collaborating in a bright office environment",
+    description:
+      "We provide skilled professionals for short-term assignments and project-based work. This helps businesses stay flexible, manage workload efficiently, and maintain productivity without long-term commitments.",
   },
   {
     code: "PH",
@@ -23,23 +31,15 @@ export const serviceCards = [
     image: "/images/services/permanent-hiring.webp",
     imageAlt: "Professional seated at an office desk during a hiring consultation",
     description:
-      "Structured sourcing and screening for dependable full-time placements across teams.",
+      "We help businesses hire full-time employees who are reliable and aligned with long-term goals. Our focus is on finding candidates with the right skills, mindset, and cultural fit to support steady growth.",
   },
   {
-    code: "VR",
-    title: "Volume Recruitment",
+    code: "VH",
+    title: "Volume Hiring",
     image: "/images/services/volume-recruitment.webp",
     imageAlt: "Corporate team in a meeting reviewing business data together",
     description:
-      "Fast, scalable hiring support for growing operations, projects, and multi-role demands.",
-  },
-  {
-    code: "TA",
-    title: "Talent Advisory",
-    image: "/images/services/talent-advisory.webp",
-    imageAlt: "Business professional working on a laptop in a modern corporate setting",
-    description:
-      "Hiring market insight, employer positioning, and process design to improve outcomes.",
+      "We support large-scale hiring needs with a structured and efficient approach. Our process ensures timely onboarding while maintaining consistency in candidate quality across multiple roles.",
   },
 ];
 
